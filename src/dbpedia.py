@@ -85,19 +85,17 @@ def queryInfluencedBy():
     The result is a dictionary, which maps the language name onto a list of languages which it was influenced by.
     """
     queryStr = """
-SELECT ?name1, ?name2 WHERE {
-    SELECT DISTINCT ?name1, ?name2 WHERE {
+SELECT ?label1, ?label2 WHERE {
+    SELECT DISTINCT ?label1, ?label2 WHERE {
         ?article1 rdf:type dbo:ProgrammingLanguage.
         ?article2 rdf:type dbo:ProgrammingLanguage.
         ?article1 dbo:influencedBy ?article2.
         ?article1 rdfs:label ?label1.
         FILTER(langMatches(LANG(?label1),"EN")).
-        BIND(STR(?label1) AS ?name1).
         ?article2 rdfs:label ?label2.
         FILTER(langMatches(LANG(?label2),"EN")).
-        BIND(STR(?label2) AS ?name2).
     }
-    ORDER BY ASC(?name1) ASC(?name2)
+    ORDER BY ASC(?label1) ASC(?label2)
 }
 LIMIT 10000
 OFFSET ?offset
@@ -111,19 +109,17 @@ def queryInfluenced():
     The result is a dictionary, which maps the language name onto a list of languages which it was influenced by.
     """
     queryStr = """
-SELECT ?name2, ?name1 WHERE {
-    SELECT DISTINCT ?name2, ?name1 WHERE {
+SELECT ?label2, ?label1 WHERE {
+    SELECT DISTINCT ?label2, ?label1 WHERE {
         ?article1 rdf:type dbo:ProgrammingLanguage.
         ?article2 rdf:type dbo:ProgrammingLanguage.
         ?article1 dbo:influenced ?article2.
         ?article1 rdfs:label ?label1.
         FILTER(langMatches(LANG(?label1),"EN")).
-        BIND(STR(?label1) AS ?name1).
         ?article2 rdfs:label ?label2.
         FILTER(langMatches(LANG(?label2),"EN")).
-        BIND(STR(?label2) AS ?name2).
     }
-    ORDER BY ASC(?name2) ASC(?name1)
+    ORDER BY ASC(?label2) ASC(?label1)
 }
 LIMIT 10000
 OFFSET ?offset
@@ -160,20 +156,18 @@ def strictQueryInfluencedBy():
     The result is a dictionary, which maps the language name onto a list of languages which it was influenced by.
     """
     queryStr = """
-SELECT ?name1, ?name2 WHERE {
-    SELECT DISTINCT ?name1, ?name2 WHERE {
+SELECT ?label1, ?label2 WHERE {
+    SELECT DISTINCT ?label1, ?label2 WHERE {
         ?article1 rdf:type dbo:ProgrammingLanguage.
         ?article2 rdf:type dbo:ProgrammingLanguage.
         ?article1 dbo:influencedBy ?article2.
         ?article2 dbo:influenced ?article1.
         ?article1 rdfs:label ?label1.
         FILTER(langMatches(LANG(?label1),"EN")).
-        BIND(STR(?label1) AS ?name1).
         ?article2 rdfs:label ?label2.
         FILTER(langMatches(LANG(?label2),"EN")).
-        BIND(STR(?label2) AS ?name2).
     }
-    ORDER BY ASC(?name1) ASC(?name2)
+    ORDER BY ASC(?label1) ASC(?label2)
 }
 LIMIT 10000
 OFFSET ?offset
@@ -201,9 +195,8 @@ SELECT ?influencedBy WHERE {
         FILTER(STR(?label1) = "?name").
         ?article1 dbo:influencedBy ?article2.
         ?article2 dbo:influenced ?article1.
-        ?article2 rdfs:label ?label2.
-        FILTER(langMatches(LANG(?label2),"EN")).
-        BIND(STR(?label2) AS ?influencedBy).
+        ?article2 rdfs:label ?influencedBy.
+        FILTER(langMatches(LANG(?influencedBy),"EN")).
     }
     ORDER BY ASC(?influencedBy)
 }
@@ -220,9 +213,8 @@ SELECT ?influenced WHERE {
         FILTER(STR(?label1) = "?name").
         ?article1 dbo:influenced ?article2.
         ?article2 dbo:influencedBy ?article1.
-        ?article2 rdfs:label ?label2.
-        FILTER(langMatches(LANG(?label2),"EN")).
-        BIND(STR(?label2) AS ?influenced).
+        ?article2 rdfs:label ?influenced.
+        FILTER(langMatches(LANG(?influenced),"EN")).
     }
     ORDER BY ASC(?influenced)
 }
