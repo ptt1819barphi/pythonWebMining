@@ -63,11 +63,94 @@ def queryLiteral(queryStr, url=DEFAULT_URL):
         newResult.append(newRow)
     return newResult
 
-def queryInfluencedBy(minDepth = 0, maxDepth = 5):
+def getResultDict(queryResult):
+    """
+    Helper method for transforming the query result to a dictionary.
+    """
+    resultDict = {}
+    
+    for r in queryResult:
+        key = clean(r[0])
+        value = clean(r[1])
+        if not value in resultDict:
+            resultDict[value] = []
+        if not key in resultDict[value]:
+            resultDict[value].append(key)
+    
+    return resultDict
+
+def queryInfluencedBy():
     """
     This method searches for all programming languages and the languages which influenced them.
+    The result is a dictionary, which maps the language name onto a list of languages which it was influenced by.
+    """
+    queryStr = """
+SELECT ?name1, ?name2 WHERE {
+    SELECT DISTINCT ?name1, ?name2 WHERE {
+        ?article1 rdf:type dbo:ProgrammingLanguage.
+        ?article2 rdf:type dbo:ProgrammingLanguage.
+        ?article1 dbo:influencedBy ?article2.
+        ?article1 rdfs:label ?label1.
+        FILTER(langMatches(LANG(?label1),"EN")).
+        BIND(STR(?label1) AS ?name1).
+        ?article2 rdfs:label ?label2.
+        FILTER(langMatches(LANG(?label2),"EN")).
+        BIND(STR(?label2) AS ?name2).
+    }
+    ORDER BY ASC(?name1) ASC(?name2)
+}
+LIMIT 10000
+OFFSET ?offset
+"""
+    result = queryLiteral(queryStr)
+    return getResultDict(result)
+
+def queryInfluenced():
+    """
+    This method searches for all programming languages and the languages which they influenced.
+    The result is a dictionary, which maps the language name onto a list of languages which it was influenced by.
+    """
+    queryStr = """
+SELECT ?name2, ?name1 WHERE {
+    SELECT DISTINCT ?name2, ?name1 WHERE {
+        ?article1 rdf:type dbo:ProgrammingLanguage.
+        ?article2 rdf:type dbo:ProgrammingLanguage.
+        ?article1 dbo:influenced ?article2.
+        ?article1 rdfs:label ?label1.
+        FILTER(langMatches(LANG(?label1),"EN")).
+        BIND(STR(?label1) AS ?name1).
+        ?article2 rdfs:label ?label2.
+        FILTER(langMatches(LANG(?label2),"EN")).
+        BIND(STR(?label2) AS ?name2).
+    }
+    ORDER BY ASC(?name2) ASC(?name1)
+}
+LIMIT 10000
+OFFSET ?offset
+"""
+    result = queryLiteral(queryStr)
+    return getResultDict(result)
+
+
+def queryInfluencedAndInfluencedBy():
+    """
+    Combines the results from influenced() and influencedBy()
+    """
+    result = queryInfluencedBy()
+    result2 = queryInfluenced()
     
-    The parameters "minDepth" and "maxDepth" are there to specify the depth of the subcategories, which are to be checked for language influence.
+    for key in result2:
+        if key in result:
+            for value in result2[key]:
+                if not value in result[key]:
+                    result[key].append(value)
+        else:
+            result[key] = result2[key]
+    return result
+
+def strictQueryInfluencedBy():
+    """
+    This method searches for all programming languages and the languages which influenced them.
     
     To enchance the data quality, a method for reducing the connections is done as follows:
     A, B = Language
@@ -77,71 +160,72 @@ def queryInfluencedBy(minDepth = 0, maxDepth = 5):
     The result is a dictionary, which maps the language name onto a list of languages which it was influenced by.
     """
     queryStr = """
-SELECT DISTINCT ?name1, ?name2 WHERE {
-    ?article1 dct:subject/skos:broader{?minDepth,?maxDepth} dbc:Programming_languages.
-    ?article2 dct:subject/skos:broader{?minDepth,?maxDepth} dbc:Programming_languages.
-    ?article1 dbo:influencedBy ?article2.
-    ?article2 dbo:influenced ?article1.
-    ?article1 rdfs:label ?label1.
-    FILTER(langMatches(LANG(?label1),"EN")).
-    BIND(STR(?label1) AS ?name1).
-    ?article2 rdfs:label ?label2.
-    FILTER(langMatches(LANG(?label2),"EN")).
-    BIND(STR(?label2) AS ?name2).
+SELECT ?name1, ?name2 WHERE {
+    SELECT DISTINCT ?name1, ?name2 WHERE {
+        ?article1 rdf:type dbo:ProgrammingLanguage.
+        ?article2 rdf:type dbo:ProgrammingLanguage.
+        ?article1 dbo:influencedBy ?article2.
+        ?article2 dbo:influenced ?article1.
+        ?article1 rdfs:label ?label1.
+        FILTER(langMatches(LANG(?label1),"EN")).
+        BIND(STR(?label1) AS ?name1).
+        ?article2 rdfs:label ?label2.
+        FILTER(langMatches(LANG(?label2),"EN")).
+        BIND(STR(?label2) AS ?name2).
+    }
+    ORDER BY ASC(?name1) ASC(?name2)
 }
-ORDER BY ASC(?name1) ASC(?name2)
 LIMIT 10000
 OFFSET ?offset
 """
-    queryStr = queryStr.replace("?minDepth", str(minDepth)).replace("?maxDepth", str(maxDepth))
     result = queryLiteral(queryStr)
     
-    resultDict = {}
-    
-    for r in result:
-        key = clean(r[0])
-        value = clean(r[1])
-        if not key in resultDict:
-            resultDict[key] = []
-        resultDict[key].append(value)
-    return resultDict
+    return getResultDict(result)
 
-def queryInfluencedAndInfluencedBy(name):
+def queryInfluencedAndInfluencedByFor(name):
     """
     The result is the same as from the method "queryInfluencedBy()"
     The only difference is, its specified for only one language,
-    e.g.: given "Java" as the language,
+    e.g.: given "Java (programming language)" as the language,
     the result is a list of languages which "Java" was influenced by and a list of languages it itself influenced.
     
     The same method as in "queryInfluencedBy()" is applied for reducing the results.
     """
     influencedByQuery = """
-SELECT DISTINCT ?influencedBy WHERE {
-    ?article1 rdfs:label ?label1.
-    FILTER(langMatches(LANG(?label1),"EN")).
-    FILTER(STR(?label1) = "?name").
-    ?article1 dbo:influencedBy ?article2.
-    ?article2 dbo:influenced ?article1.
-    ?article2 rdfs:label ?label2.
-    FILTER(langMatches(LANG(?label2),"EN")).
-    BIND(STR(?label2) AS ?influencedBy).
+SELECT ?influencedBy WHERE {
+    SELECT DISTINCT ?influencedBy WHERE {
+        ?article1 rdf:type dbo:ProgrammingLanguage.
+        ?article2 rdf:type dbo:ProgrammingLanguage.
+        ?article1 rdfs:label ?label1.
+        FILTER(langMatches(LANG(?label1),"EN")).
+        FILTER(STR(?label1) = "?name").
+        ?article1 dbo:influencedBy ?article2.
+        ?article2 dbo:influenced ?article1.
+        ?article2 rdfs:label ?label2.
+        FILTER(langMatches(LANG(?label2),"EN")).
+        BIND(STR(?label2) AS ?influencedBy).
+    }
+    ORDER BY ASC(?influencedBy)
 }
-ORDER BY ASC(?influencedBy)
 LIMIT 10000
 OFFSET ?offset
 """
     influencedQuery = """
-SELECT DISTINCT ?influenced WHERE {
-    ?article1 rdfs:label ?label1.
-    FILTER(langMatches(LANG(?label1),"EN")).
-    FILTER(STR(?label1) = "?name").
-    ?article1 dbo:influenced ?article2.
-    ?article2 dbo:influencedBy ?article1.
-    ?article2 rdfs:label ?label2.
-    FILTER(langMatches(LANG(?label2),"EN")).
-    BIND(STR(?label2) AS ?influenced).
+SELECT ?influenced WHERE {
+    SELECT DISTINCT ?influenced WHERE {
+        ?article1 rdf:type dbo:ProgrammingLanguage.
+        ?article2 rdf:type dbo:ProgrammingLanguage.
+        ?article1 rdfs:label ?label1.
+        FILTER(langMatches(LANG(?label1),"EN")).
+        FILTER(STR(?label1) = "?name").
+        ?article1 dbo:influenced ?article2.
+        ?article2 dbo:influencedBy ?article1.
+        ?article2 rdfs:label ?label2.
+        FILTER(langMatches(LANG(?label2),"EN")).
+        BIND(STR(?label2) AS ?influenced).
+    }
+    ORDER BY ASC(?influenced)
 }
-ORDER BY ASC(?influenced)
 LIMIT 10000
 OFFSET ?offset
 """
@@ -151,6 +235,7 @@ OFFSET ?offset
     
     influencedByResult = queryLiteral(influencedByQuery)
     influencedResult = queryLiteral(influencedQuery)
+    
     resultDict = {}
     name = clean(name)
     
