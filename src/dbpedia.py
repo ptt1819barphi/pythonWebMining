@@ -3,7 +3,7 @@ import re
 from SPARQLWrapper import SPARQLWrapper, JSON
 from time import sleep
 
-DEFAULT_URL = "https://dbpedia.org/sparql"
+DEFAULT_URL = "http://dbpedia-live.openlinksw.com/sparql"
 
 def clean(str):
     """
@@ -72,11 +72,10 @@ def getResultDict(queryResult):
     for r in queryResult:
         key = clean(r[0])
         value = clean(r[1])
-        if not value in resultDict:
-            resultDict[value] = []
-        if not key in resultDict[value]:
-            resultDict[value].append(key)
-    
+        if not key in resultDict:
+            resultDict[key] = []
+        if not value in resultDict[key]:
+            resultDict[key].append(value)
     return resultDict
 
 def queryInfluencedBy():
@@ -87,8 +86,8 @@ def queryInfluencedBy():
     queryStr = """
 SELECT ?label1, ?label2 WHERE {
     SELECT DISTINCT ?label1, ?label2 WHERE {
-        ?article1 rdf:type dbo:ProgrammingLanguage.
-        ?article2 rdf:type dbo:ProgrammingLanguage.
+        ?article1 dbp:wikiPageUsesTemplate dbt:Infobox_programming_language.
+        ?article2 dbp:wikiPageUsesTemplate dbt:Infobox_programming_language.
         ?article1 dbo:influencedBy ?article2.
         ?article1 rdfs:label ?label1.
         FILTER(langMatches(LANG(?label1),"EN")).
@@ -111,8 +110,8 @@ def queryInfluenced():
     queryStr = """
 SELECT ?label2, ?label1 WHERE {
     SELECT DISTINCT ?label2, ?label1 WHERE {
-        ?article1 rdf:type dbo:ProgrammingLanguage.
-        ?article2 rdf:type dbo:ProgrammingLanguage.
+        ?article1 dbp:wikiPageUsesTemplate dbt:Infobox_programming_language.
+        ?article2 dbp:wikiPageUsesTemplate dbt:Infobox_programming_language.
         ?article1 dbo:influenced ?article2.
         ?article1 rdfs:label ?label1.
         FILTER(langMatches(LANG(?label1),"EN")).
@@ -158,8 +157,8 @@ def strictQueryInfluencedBy():
     queryStr = """
 SELECT ?label1, ?label2 WHERE {
     SELECT DISTINCT ?label1, ?label2 WHERE {
-        ?article1 rdf:type dbo:ProgrammingLanguage.
-        ?article2 rdf:type dbo:ProgrammingLanguage.
+        ?article1 dbp:wikiPageUsesTemplate dbt:Infobox_programming_language.
+        ?article2 dbp:wikiPageUsesTemplate dbt:Infobox_programming_language.
         ?article1 dbo:influencedBy ?article2.
         ?article2 dbo:influenced ?article1.
         ?article1 rdfs:label ?label1.
@@ -188,8 +187,8 @@ def queryInfluencedAndInfluencedByFor(name):
     influencedByQuery = """
 SELECT ?influencedBy WHERE {
     SELECT DISTINCT ?influencedBy WHERE {
-        ?article1 rdf:type dbo:ProgrammingLanguage.
-        ?article2 rdf:type dbo:ProgrammingLanguage.
+        ?article1 dbp:wikiPageUsesTemplate dbt:Infobox_programming_language.
+        ?article2 dbp:wikiPageUsesTemplate dbt:Infobox_programming_language.
         ?article1 rdfs:label ?label1.
         FILTER(langMatches(LANG(?label1),"EN")).
         FILTER(STR(?label1) = "?name").
@@ -206,8 +205,8 @@ OFFSET ?offset
     influencedQuery = """
 SELECT ?influenced WHERE {
     SELECT DISTINCT ?influenced WHERE {
-        ?article1 rdf:type dbo:ProgrammingLanguage.
-        ?article2 rdf:type dbo:ProgrammingLanguage.
+        ?article1 dbp:wikiPageUsesTemplate dbt:Infobox_programming_language.
+        ?article2 dbp:wikiPageUsesTemplate dbt:Infobox_programming_language.
         ?article1 rdfs:label ?label1.
         FILTER(langMatches(LANG(?label1),"EN")).
         FILTER(STR(?label1) = "?name").
