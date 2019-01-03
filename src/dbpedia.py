@@ -3,7 +3,7 @@ import re
 from SPARQLWrapper import SPARQLWrapper, JSON
 from time import sleep
 
-DEFAULT_URL = "http://dbpedia-live.openlinksw.com/sparql"
+DEFAULT_URL = "https://dbpedia-live.openlinksw.com/sparql"
 
 def clean(str):
     """
