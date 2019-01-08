@@ -15,5 +15,14 @@ This problem is solved using the following strategies:
 * graphviz (https://pypi.org/project/graphviz/)
 
 # Usage
-	$ python main.py
+    $ cd src
+    $ python main.py
 The result is in the "output" directory.
+In the "output" directory are three generated files:
+
+* programming.svg which contains all influences between programming languages.
+* programming-strict.svg which contains all influences between programming languages but checks if both languages have a reference to each other (A influenced B and B influencedBy A).
+* java.svg an example for getting the influences of a specific programming language (java in this example).
+
+The code describing how to use the methods of dbpedia.py and graph.py is in the main.py.
+Both dbpedia.py and graph.py also include pythondoc for each method.

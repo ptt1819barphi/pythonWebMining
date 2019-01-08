@@ -177,12 +177,11 @@ OFFSET ?offset
 
 def queryInfluencedAndInfluencedByFor(name):
     """
-    The result is the same as from the method "queryInfluencedBy()"
+    The result is the same as from the method "queryInfluencedAndInfluencedBy()"
     The only difference is, its specified for only one language,
     e.g.: given "Java (programming language)" as the language,
     the result is a list of languages which "Java" was influenced by and a list of languages it itself influenced.
-    
-    The same method as in "queryInfluencedBy()" is applied for reducing the results.
+    Note that only the "Java" infobox is taken for account.
     """
     influencedByQuery = """
 SELECT ?influencedBy WHERE {
@@ -193,7 +192,6 @@ SELECT ?influencedBy WHERE {
         FILTER(langMatches(LANG(?label1),"EN")).
         FILTER(STR(?label1) = "?name").
         ?article1 dbo:influencedBy ?article2.
-        ?article2 dbo:influenced ?article1.
         ?article2 rdfs:label ?influencedBy.
         FILTER(langMatches(LANG(?influencedBy),"EN")).
     }
@@ -211,7 +209,6 @@ SELECT ?influenced WHERE {
         FILTER(langMatches(LANG(?label1),"EN")).
         FILTER(STR(?label1) = "?name").
         ?article1 dbo:influenced ?article2.
-        ?article2 dbo:influencedBy ?article1.
         ?article2 rdfs:label ?influenced.
         FILTER(langMatches(LANG(?influenced),"EN")).
     }

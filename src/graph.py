@@ -87,4 +87,3 @@ def saveToFile(dot, cleanup=True, file = None):
         
     print(savedAs + " saved.")
     return savedAs
-    
